@@ -41,6 +41,7 @@ class zamboni
 
         $html = str_get_dom($this->html);
         $table = $html($table_selector, $nth_table-1);
+
         foreach($table($row_selector) as $row)
         {
             $item = array();
