@@ -3,6 +3,20 @@
 class zamboni
 {
     private $html = NULL;
+    private $error = NULL;
+
+    public function __construct($string = NULL)
+    {
+        if(!empty($string))
+        {
+            $this->load_from_string($string);
+        }
+    }
+
+    public function html()
+    {
+        return $this->html;
+    }
 
     public  function load_from_url($url, $referrer = NULL, $user_agent = NULL)
     {
@@ -21,6 +35,17 @@ class zamboni
         }
 
 	    $this->html = curl_exec($c);
+        if(curl_errno($c))
+        {
+            $this->error = curl_error($c);
+            return FALSE;
+        }
+        return TRUE;
+    }
+
+    public function error()
+    {
+        return $this->error;
     }
 
     public  function load_from_file($filename)
@@ -33,7 +58,18 @@ class zamboni
         $this->html = $string;
     }
 
-    public  function extract($table_selector, $nth_table = 1, $row_selector = 'tr', $header_row = TRUE)
+    public function extract($selector, $nth = 1)
+    {
+        $html = str_get_dom($this->html);
+        $block = $html($selector, $nth-1);
+        if(!method_exists($block, 'getInnerText'))
+        {
+            return NULL;
+        }
+        return $block->getInnerText();
+    }
+
+    public  function table($table_selector, $nth_table = 1, $row_selector = 'tr', $header_row = TRUE)
     {
         $data = array();
         $columns = array();
@@ -41,6 +77,13 @@ class zamboni
 
         $html = str_get_dom($this->html);
         $table = $html($table_selector, $nth_table-1);
+
+        if(empty($table))
+        {
+            return FALSE;
+            //print $this->html;
+            //exit;
+        }
 
         foreach($table($row_selector) as $row)
         {
@@ -89,8 +132,11 @@ class zamboni
                 }
                 $col_count++;
             }
-
-            $data[]= $item;
+        
+            if(!empty($item))
+            {
+                $data[]= $item;
+            }
         }
         
         return $data;
